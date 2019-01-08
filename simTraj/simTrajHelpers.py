@@ -15,13 +15,19 @@ map_data_split = np.load('../data/map_data_split14.npy')
 map_data_all = np.load('../data/map_data_all.npy')
 
 def find_closest(point, points):
+    """
+    Find closest point to POINT in list POINTS
+    """
 	point_rep = np.matlib.repmat(point, points.shape[1], 1).T
 	dists = np.sqrt(np.sum(np.square((point_rep - points)),0))
 	i = np.argmin(dists) 
 	return i, dists[i]
 
 def get_lines(scene_ix, delta):
-
+    """
+    Find the edges TRAJS between the drivable and not-drivable areas of the map 
+    corresponding to scene scene_ix
+    """
     scenes = nusc.scene
     record = scenes[scene_ix]
     partition = map_data_split[scene_ix][0]
@@ -49,35 +55,36 @@ def get_lines(scene_ix, delta):
             ymin = min(ymin,y)
             ymax = max(ymax,y)
 
-    A= (ymax-ymin)*(xmax-xmin)
+    A = (ymax-ymin)*(xmax-xmin)
 
     #If area is already big enough, do not expand the map
     if(A>600*600):
         delta = 0
     do = np.array(map_mask.mask[(int(ymin)-delta):(int(ymax)+delta),(int(xmin)-delta):(int(xmax)+delta)])
     mask = Image.fromarray(do)
+ 
+    #find the map's edges
+    #horizontal and vertical derivatives, concatenation with a row / column of zeros
     docol =np.abs(np.concatenate((np.zeros((do.shape[0],1)),  np.diff(do,axis = 1)), axis = 1))
     dorow = np.abs(np.concatenate((np.diff(do,axis = 0),np.zeros((1,do.shape[1]))), axis = 0))
     edges = docol + dorow
     rows, col = np.where(edges != 0)
-    #divide line 
+
+    #divide line. If you do not find a point at length threshold of your point, 
+    #you have finished finding one of the edges.
     threshold = 10
-    #Find closest point in a list of points
     i = 0
     points_org = []
+    #list of points corresponding to one of the edges
     traj = []
+
+    #list of edges
     trajs = []
     d = 0
     points = np.concatenate((np.expand_dims(rows,0),np.expand_dims(col,0)), axis = 0)
-    points.shape
-    iters = 0
-    stop = points.shape[1]
+
     while(points.shape[1]>1):
         d = 0 
-        #iters+= 1
-        if(iters > stop):
-	        print('use break')
-	        break
         while(d<threshold and points.shape[1]>1 ):
 	        point = points[:,i]
 	        points_org.append(point)
@@ -85,32 +92,40 @@ def get_lines(scene_ix, delta):
 	        points = np.delete(points, i, 1) #delete column i
 	        i, d = find_closest(point, points)
 	        iters += 1
-	        if(iters>stop):
-	            print('use break')
-	            break
 
 	    #Find the closest point    
         trajs.append(traj)
         traj = []
     return trajs,do
 
-def get_length(traj):
-	#Sample trajectory to avoid noise in getting the length
-	#the length of the trajectory is not proportional to the number of points (point density varies)
 
-	#step = 5 for it to work well on resampled trajectories
-	step = max(int(len(traj)/10),1)
-	t = np.arange(0, len(traj), step)
-	if(len(traj)>1):
-	    delta_x = np.diff(traj[t,0])
-	    delta_y = np.diff(traj[t,1])   
-	    return (sum(np.sqrt(np.power(delta_x, 2)+np.power(delta_y, 2))))
-	else: 
-	    return 0
+def get_length(traj):
+    """
+    Get length (pixels) of trajectory traj. The complication arises in that 
+    #the length of the trajectory is not proportional to the number of points (point density varies)
+    """
+
+    #First sample trajectory to avoid noise in getting the length. 
+    step = max(int(len(traj)/10),1)
+    t = np.arange(0, len(traj), step)
+    if(len(traj)>1):
+        delta_x = np.diff(traj[t,0])
+        delta_y = np.diff(traj[t,1])   
+        return (sum(np.sqrt(np.power(delta_x, 2)+np.power(delta_y, 2))))
+    else: 
+        return 0
+
 
 def find_drivable(do, px, py, p1x, p1y, step):
-	#find where is the drivable area
-	#step is the distance to the road
+    """
+	#find where is the drivable area, to the right or to the left of the vector 
+    that goes from p to p1. 
+    DO: matrix containing the drivable / not-drivable areas
+    PX, PY, P1X, P1Y, STEP: you want to see where the drivable area is distance step in the
+    perpendicular direction to the vector P-P1, starting from the middle point between P and P1.
+    You need this function rather than doing this in GET_DIRECTIONS to avoing changing signx and signy 
+    in the middle of generating a trajectory.
+    """
 	pmx, pmy = int((p1x+px)/2), int((p1y+py)/2)
 	vecx, vecy = -(p1y-py), (p1x- px)
 	power = np.sqrt(vecx**2 + vecy**2)
@@ -139,8 +154,11 @@ def find_drivable(do, px, py, p1x, p1y, step):
 
 
 def get_directions(px, py, p1x, p1y, step, signx, signy):
-	#find where is the drivable area
-	#step is the distance to the road
+    """
+    Find the next point when generating a trajectory. This point will be at distance STEP in the
+    perpendicular direction to the vector P-P1, starting from the middle point between P and P1.
+    You sum / substract the vector perpendicular to P-P1 depending on signx and signy.
+    """
 	pmx, pmy = int((p1x+px)/2), int((p1y+py)/2)
 	vecx, vecy = -(p1y-py), (p1x- px)
 	power = np.sqrt(vecx**2 + vecy**2)
@@ -163,16 +181,21 @@ def get_directions(px, py, p1x, p1y, step, signx, signy):
 	return poutx, pouty
 
 def get_next_point(pix, traj, step_len):
-	#Find the point in trajectory TRAJ that is length STEP_LEN from point (px, py)
+    """
+	Find the point in trajectory TRAJ that is length STEP_LEN from point P
+    """
 	px, py = traj[pix]
 	pixf = pix+1
-
 	while(get_length(traj[pix:pixf]) < step_len):
 	    pixf += 1
 	    
 	return pixf
 	  
 def resample_traj(traj):
+    """
+    Resample trajectory TRAJ so there are is one point every 2 pixels
+    (make sampling rate bigger)
+    """
 	traj_resampled = []
 	for i in range(traj.shape[0]-1):
 	    length  = get_length(traj[i:(i+2)])
@@ -192,6 +215,10 @@ def resample_traj(traj):
 	return np.array(traj_resampled)
 
 def get_new_traj(traj_resampled, velocities, margin_error = 50):
+    """
+    Build new trajectory that goes in the line of TRAJ_RESAMPLED with the absolute instantaneous
+    velocities that appear in the vector VELOCITIES.
+    """
 	#Margin_error is necessary because the measurement of the length is not exact. 
 	#Imagine a new trajectory from a resampled one. points = length(velocities)+ 1
 
@@ -199,12 +226,11 @@ def get_new_traj(traj_resampled, velocities, margin_error = 50):
 	L_new = sum(velocities)
 	L_old = get_length(traj_resampled)
 
-	#in this case we need to extend the old trajectory
-
+	#if the length of the old trajectory is not larger than that of the new trajectory, 
+    #we extend the new trajectory
 	if(L_old < L_new+margin_error):
 	    traj_resampled = extend_traj(traj_resampled, L_new +margin_error)
-	    
-
+	
 	L_old = get_length(traj_resampled)
 	px, py = traj_resampled[0]
 	j = 0
@@ -216,24 +242,32 @@ def get_new_traj(traj_resampled, velocities, margin_error = 50):
 	return np.array(traj_new)
 		    
 def get_next_point(ixp, traj, step_pos):
-	#Find the point in trajectory TRAJ that is length STEP_LEN from point (px, py)
+    """
+	Find the point in trajectory TRAJ that is length STEP_LEN from traj[ixp]
+    """
 	px, py = traj[ixp]
 	ixpf = ixp+1
-	#print('Length of the trajectory: ', get_length(traj))
-	#print('we look for a point at distance: ', step_pos)
+
 	while(get_length(traj[ixp:ixpf]) < step_pos and (ixpf<traj.shape[0])):
 	    ixpf += 1
 	if(ixpf < traj.shape[0]):
 	    px, py = [traj[ixpf,0], traj[ixpf,1]]
 	else:
-	    print('error')
-	    print(traj)
+        #there is not a point in traj to which assign the new point. We set
+        #px and py to -999, which indicates a missing value.
 	    px, py = -999,-999
 
 	return px,py, ixpf
 
 
 def get_new_trajs(trajs_div,do,test, show = False):
+    """
+    Build new trajectories. 
+    TRAJ_DIV: Edges of the map
+    DO: map matrix 
+    TEST: boolean which indicates whether we are in a test or a training scene
+    SHOW: Plot the new created trajectories 
+    """
     mask = Image.fromarray(do)
     if(show):
         _, axes = plt.subplots(1, 1, figsize=(10, 10))
@@ -263,7 +297,7 @@ def get_new_trajs(trajs_div,do,test, show = False):
         if(dermax<20):
             if(show):
                 axes.plot(traj[t,1], traj[t,0], color = 'b')
-            #Now create a face traj
+            #Now create a fake traj
             traj_sim = np.zeros((10,2))
             traj_sim = []
             step_pos = 50
@@ -305,6 +339,9 @@ def get_new_trajs(trajs_div,do,test, show = False):
 	    
 #divide trajs
 def divide_trajs(trajs):
+    """
+    Divide the map's edges
+    """
 	trajs_div = []
 	L = 800
 	step =  300
@@ -365,24 +402,26 @@ def extend_traj(traj,new_length):
 
     return new_traj
 	    
-def build_velocities(train_scenes):
-	#Build velocities matrix
-	THRESHOLD_ACCELERATION = 7 #MAXIMUN  ACCELERATION CONSIDERED NORMAL
-	THRESHOLD_LENGTH = 40
-	#Let's look at the number of partitions per instance
-	#Problem with this approach: same trajectory will appear a lot of times
+def build_velocities(scenes):
+    """
+    Build a velocities matrix with absolute velocities of trajectories that appear in 
+    the list of scenes SCENES.
+    """
+	#Thresholds are stricter than before, as here we are simulating trajectories
+    #we can only make use of those with a better quality.
+	THRESHOLD_ACCELERATION = 10 #MAXIMUM  ACCELERATION THAT THE TRAJECTORIES IN THE VELOCITIES MATRIX HAVE
+	THRESHOLD_LENGTH = 40 #MINIMUM LENGTH
 	velocities = []
 	instance_ID = 0
 	ins_offset = 0
 	part_no = {}
 
-	map_data_split_ = map_data_split[train_scenes] #to ensure we train with only velocities that come from the training set
+	map_data_split_ = map_data_split[scenes] #to ensure we train with only velocities that come from the training set
 	for scene_ix in range(map_data_split_.shape[0]):
 	    traj_partitions = []
 	    for partition_ix in range(len(map_data_split_[scene_ix])):
 		    part = map_data_split_[scene_ix][partition_ix]
 		    traj_instances= []
-	        
 		    for instance_ix in range(part.shape[0]):
 		        instance_ID = ins_offset +instance_ix
 		        traj_x = map_data_split_[scene_ix][partition_ix][instance_ix, :, 0]
@@ -396,9 +435,7 @@ def build_velocities(train_scenes):
 		            vx = np.diff(traj_x)
 		            vy = np.diff(traj_y)
 		            v = np.sqrt(np.power(vx, 2)+np.power(vy,2))
-		            length = get_length(traj)
-		            a = np.abs(np.diff(traj, 2, axis = 1))
-		            a_ = np.sqrt(np.power(a[:,0],2) + np.power(a[:,1],2))
+                    a_ = np.abs(np.diff(v))
 		            L_v = sum(v)
 		            if(L_v> THRESHOLD_LENGTH and np.max(a_)<THRESHOLD_ACCELERATION):
 		                velocities.append(v)
@@ -407,6 +444,9 @@ def build_velocities(train_scenes):
 	return np.array(velocities)
 
 def load_maps():
+    """
+    Load a list containing a map for each scene
+    """
     maps_list = []
     #Save map mask for every scene
     for i in range(100):

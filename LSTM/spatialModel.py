@@ -101,7 +101,6 @@ class DataLoader():
                   mean_y = np.mean(traj_y[0])
                   std_x = np.std(traj_x[0:4])
                   std_y = np.std(traj_y[0:4])
-                  #if(std_x > threshold or std_y>threshold):
                   traj_x = np.diff(traj_x)
                   traj_y = np.diff(traj_y)
                   means.append([mean_x, mean_y])
@@ -198,7 +197,6 @@ class DataLoader():
                 self.data.append(traj[[0, 1], :].T)
                 counter += 1
 
-        #shuffle the data (if training) so all trajectories belonging to an instance won´t be in the same batch in different epoch
         indexes = np.arange(len(self.data))
         self.data = np.array(self.data)
         self.mean_std = np.array(self.mean_std)
@@ -347,7 +345,6 @@ class Model():
             input_concatenated = tf.concat((embedded_x, embedded_xs), 1)
             embedded_inputs.append(input_concatenated)
    
-
         # Feed the embedded input data, the initial state of the LSTM cell, the recurrent unit to the seq2seq decoder
         outputs, last_state = tf.contrib.legacy_seq2seq.rnn_decoder(embedded_inputs, self.initial_state, self.cell, loop_function=None)
 
@@ -532,7 +529,6 @@ class Model():
         input_ = np.zeros((1, 1, 2))
         input_s = np.zeros((1,1,self.n**2))
         t=0
-
         mean_x = mean_std[0][0]
         std_x = mean_std[0][1]
         mean_y = mean_std[1][0]
@@ -579,7 +575,6 @@ class Model():
         
         for t in range(num):
             # Create the feed dict
-
             feed = {self.input_data: input_, self.input_s: input_s, self.initial_state: state}
 
             # Get the final state and also the coef of the distribution of the next point
