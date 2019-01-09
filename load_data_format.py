@@ -3,19 +3,18 @@ Author Jose Garrido Ramas. Load nuscenes data, the format being 100 text files (
 contains the trajectory data in the format (FRAME_ID, INSTANCE_ID, X, Y, CATEGORY_NAME). 
 """
 
-%matplotlib inline
 from nuscenes_utils.nuscenes import NuScenes
 import numpy as np
 from helpers import *
 
-nusc = NuScenes(version='v0.1', dataroot='/home/jogarrid/data', verbose=True)
+nusc = NuScenes(version='v0.1', dataroot='dataset', verbose=True)
 
 #function in helpers.py to load all the data
-map_data_all = load_traj_data(nusc)
+map_data_all = load_traj_data(nusc, only_vehicles = False)
 
 instance_id = 0
 for scene_ix in range(len(map_data_all)):
-    textFile = open('trajectories/' + str(scene_ix) +'.txt', 'w')
+    textFile = open('traj_format/' + str(scene_ix) +'.txt', 'w')
     #First iterate over all frames (t is the FRAME_ID)
     for t in range(map_data_all[scene_ix]['pos'].shape[1]):
         #For each sample,  iterate over all its annotations
