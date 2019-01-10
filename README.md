@@ -15,10 +15,6 @@ The file helpers.py contains helper functions to load the data.
 
 In the folder simTraj,the same file helpers.py appears, along with simTrajHelpers.py (helper functions to simulating the trajectories) and simTraj.py. The result of executing simTraj.py is all_trajs_generated.npy, containing the synthetic trajectories is generated in the data folder.
 
-In the folder LSTM, we find the files necessary to carry out the experiments. After executing vanilla_train.py, you can execute vanilla_test.py and see the test error (which is compared to the linear prediction error). Different parameters in executing this function allow you to change the hyperparameters of the LSTM model and also to choose the dataset (simulated or real) in which you train on. 
-
-The training and test of spatial LSTM is equivalent to that of vanilla LSTM (first execute spatial_train.py, then execute spatial_test.py).
-
 EXECUTION INSTRUCTIONS:
 1st, execute load_data.py and simTraj.py. All the necessary files to carry out the LSTM prediction experiments will be created in the data folder.
 
