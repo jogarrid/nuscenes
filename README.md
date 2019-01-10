@@ -9,7 +9,7 @@ As of December 2018, tensorflow is not compatible with python 3.7. Nuscenes, how
 The file loadData.py creates, in the folder data, the files map_data_all.npy, map_data_split.npy and nusc.p . 
 map_data_all contains the trajectories for all vehicles in the dataset. Map_data_split contains the same information, only the scenes have been divided into partitions. nusc.p contains information on the annotations for the trajectories.
 
-The file loadDataFormat.py creates the folder dataFormat which contains the trajectories in the format FRAME_ID, INSTANCE_ID, X, Y, CATEGORY_NAME.
+The file loadDataFormat.py creates the folder traj_Format which contains the trajectories in the format FRAME_ID, INSTANCE_ID, X, Y, CATEGORY_NAME.
 
 The file helpers.py contains helper functions to load the data.
 
