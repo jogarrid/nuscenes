@@ -6,22 +6,24 @@ import numpy as np
 from helpers import *
 import pickle
 
-#nusc =  NuScenes(version='v0.1', dataroot='/home/jose/data', verbose=True)
-with open('../data/nusc.p', 'rb') as pickle_file:
-    nusc = pickle.load(pickle_file)
+#2 ways of loading the nuscenes data:
+nusc =  NuScenes(version='v0.1', dataroot='../dataset', verbose=True)
+#with open('../data/nusc.p', 'rb') as pickle_file:
+#    nusc = pickle.load(pickle_file)
 
 map_data_split = np.load('../data/map_data_split14.npy')
-
 map_data_all = np.load('../data/map_data_all.npy')
+split_size = 2*7
+step = 2*4
 
 def find_closest(point, points):
     """
     Find closest point to POINT in list POINTS
     """
-	point_rep = np.matlib.repmat(point, points.shape[1], 1).T
-	dists = np.sqrt(np.sum(np.square((point_rep - points)),0))
-	i = np.argmin(dists) 
-	return i, dists[i]
+    point_rep = np.matlib.repmat(point, points.shape[1], 1).T
+    dists = np.sqrt(np.sum(np.square((point_rep - points)),0))
+    i = np.argmin(dists) 
+    return i, dists[i]
 
 def get_lines(scene_ix, delta):
     """
@@ -91,7 +93,6 @@ def get_lines(scene_ix, delta):
 	        traj.append(point)
 	        points = np.delete(points, i, 1) #delete column i
 	        i, d = find_closest(point, points)
-	        iters += 1
 
 	    #Find the closest point    
         trajs.append(traj)
@@ -126,31 +127,31 @@ def find_drivable(do, px, py, p1x, p1y, step):
     You need this function rather than doing this in GET_DIRECTIONS to avoing changing signx and signy 
     in the middle of generating a trajectory.
     """
-	pmx, pmy = int((p1x+px)/2), int((p1y+py)/2)
-	vecx, vecy = -(p1y-py), (p1x- px)
-	power = np.sqrt(vecx**2 + vecy**2)
-	vecx = vecx*step /power
-	vecy = vecy*step / power
-	ctex = int(10 *np.sign(vecx))
-	ctey = int(10 *np.sign(vecy))
-	delta_ = 20
-	do_ = np.concatenate((do, np.zeros((delta_, do.shape[1]))), axis = 0)
-	do_ = np.concatenate((np.zeros((delta_, do_.shape[1])), do_), axis = 0)
-	do_ = np.concatenate((do_, np.zeros((do_.shape[0], delta_))), axis = 1)
-	do_ = np.concatenate((np.zeros((do_.shape[0], delta_)), do_), axis = 1)
+    pmx, pmy = int((p1x+px)/2), int((p1y+py)/2)
+    vecx, vecy = -(p1y-py), (p1x- px)
+    power = np.sqrt(vecx**2 + vecy**2)
+    vecx = vecx*step /power
+    vecy = vecy*step / power
+    ctex = int(10 *np.sign(vecx))
+    ctey = int(10 *np.sign(vecy))
+    delta_ = 20
+    do_ = np.concatenate((do, np.zeros((delta_, do.shape[1]))), axis = 0)
+    do_ = np.concatenate((np.zeros((delta_, do_.shape[1])), do_), axis = 0)
+    do_ = np.concatenate((do_, np.zeros((do_.shape[0], delta_))), axis = 1)
+    do_ = np.concatenate((np.zeros((do_.shape[0], delta_)), do_), axis = 1)
 
-	if(do_[pmx + ctex+delta_, pmy+delta_] == 255): #drivable area reached through adding VECX
-	    signx = '+'
-	    
-	else: 
-	    signx = '-'
-	    
-	if(do_[pmx+delta_, (pmy + ctey+delta_)] == 255): #drivable area reached through adding VECY
-	    signy = '+'
-	else: 
-	    signy = '-'
-	    
-	return signx, signy
+    if(do_[pmx + ctex+delta_, pmy+delta_] == 255): #drivable area reached through adding VECX
+        signx = '+'
+        
+    else: 
+        signx = '-'
+        
+    if(do_[pmx+delta_, (pmy + ctey+delta_)] == 255): #drivable area reached through adding VECY
+        signy = '+'
+    else: 
+        signy = '-'
+        
+    return signx, signy
 
 
 def get_directions(px, py, p1x, p1y, step, signx, signy):
@@ -159,105 +160,105 @@ def get_directions(px, py, p1x, p1y, step, signx, signy):
     perpendicular direction to the vector P-P1, starting from the middle point between P and P1.
     You sum / substract the vector perpendicular to P-P1 depending on signx and signy.
     """
-	pmx, pmy = int((p1x+px)/2), int((p1y+py)/2)
-	vecx, vecy = -(p1y-py), (p1x- px)
-	power = np.sqrt(vecx**2 + vecy**2)
-	vecx = vecx*step /power
-	vecy = vecy*step / power
-	ctex = int(10 *np.sign(vecx))
-	ctey = int(10 *np.sign(vecy))
+    pmx, pmy = int((p1x+px)/2), int((p1y+py)/2)
+    vecx, vecy = -(p1y-py), (p1x- px)
+    power = np.sqrt(vecx**2 + vecy**2)
+    vecx = vecx*step /power
+    vecy = vecy*step / power
+    ctex = int(10 *np.sign(vecx))
+    ctey = int(10 *np.sign(vecy))
 
-	if(signx == '+'): #drivable area reached through adding VECX
-	    poutx = pmx + vecx
-	    
-	else: 
-	    poutx = pmx - vecx
-	    
-	if(signy == '+'): #drivable area reached through adding VECY
-	    pouty = pmy + vecy
-	else: 
-	    pouty = pmy - vecy
-	    
-	return poutx, pouty
+    if(signx == '+'): #drivable area reached through adding VECX
+        poutx = pmx + vecx
+        
+    else: 
+        poutx = pmx - vecx
+        
+    if(signy == '+'): #drivable area reached through adding VECY
+        pouty = pmy + vecy
+    else: 
+        pouty = pmy - vecy
+        
+    return poutx, pouty
 
 def get_next_point(pix, traj, step_len):
     """
 	Find the point in trajectory TRAJ that is length STEP_LEN from point P
     """
-	px, py = traj[pix]
-	pixf = pix+1
-	while(get_length(traj[pix:pixf]) < step_len):
-	    pixf += 1
-	    
-	return pixf
+    px, py = traj[pix]
+    pixf = pix+1
+    while(get_length(traj[pix:pixf]) < step_len):
+        pixf += 1
+        
+    return pixf
 	  
 def resample_traj(traj):
     """
     Resample trajectory TRAJ so there are is one point every 2 pixels
     (make sampling rate bigger)
     """
-	traj_resampled = []
-	for i in range(traj.shape[0]-1):
-	    length  = get_length(traj[i:(i+2)])
-	    vx, vy = traj[i+1,0]-traj[i,0], traj[i+1,1]-traj[i,1]
-	    #normalize vx, vy
-	    cte = 2/ np.sqrt(vx**2 +vy**2)
-	    vx = cte * vx
-	    vy = cte * vy
-	    px, py = traj[i,0], traj[i,1]
-	    traj_add = [[px,py]]
-	    traj_resampled.append([px, py])
-	    while(get_length(np.array(traj_add))<length):
-		    px += vx
-		    py += vy
-		    traj_add.append([px, py])
-		    traj_resampled.append([px,py])
-	return np.array(traj_resampled)
+    traj_resampled = []
+    for i in range(traj.shape[0]-1):
+        length  = get_length(traj[i:(i+2)])
+        vx, vy = traj[i+1,0]-traj[i,0], traj[i+1,1]-traj[i,1]
+        #normalize vx, vy
+        cte = 2/ np.sqrt(vx**2 +vy**2)
+        vx = cte * vx
+        vy = cte * vy
+        px, py = traj[i,0], traj[i,1]
+        traj_add = [[px,py]]
+        traj_resampled.append([px, py])
+        while(get_length(np.array(traj_add))<length):
+	        px += vx
+	        py += vy
+	        traj_add.append([px, py])
+	        traj_resampled.append([px,py])
+    return np.array(traj_resampled)
 
 def get_new_traj(traj_resampled, velocities, margin_error = 50):
     """
     Build new trajectory that goes in the line of TRAJ_RESAMPLED with the absolute instantaneous
     velocities that appear in the vector VELOCITIES.
     """
-	#Margin_error is necessary because the measurement of the length is not exact. 
-	#Imagine a new trajectory from a resampled one. points = length(velocities)+ 1
+    #Margin_error is necessary because the measurement of the length is not exact. 
+    #Imagine a new trajectory from a resampled one. points = length(velocities)+ 1
 
-	#length of the new trajectory
-	L_new = sum(velocities)
-	L_old = get_length(traj_resampled)
+    #length of the new trajectory
+    L_new = sum(velocities)
+    L_old = get_length(traj_resampled)
 
-	#if the length of the old trajectory is not larger than that of the new trajectory, 
+    #if the length of the old trajectory is not larger than that of the new trajectory, 
     #we extend the new trajectory
-	if(L_old < L_new+margin_error):
-	    traj_resampled = extend_traj(traj_resampled, L_new +margin_error)
-	
-	L_old = get_length(traj_resampled)
-	px, py = traj_resampled[0]
-	j = 0
-	traj_new  =[[px,py]]
-	for v in velocities:
-	    px,py,j = get_next_point(j, traj_resampled, v)
-	    traj_new.append([px, py])
+    if(L_old < L_new+margin_error):
+        traj_resampled = extend_traj(traj_resampled, L_new +margin_error)
 
-	return np.array(traj_new)
+    L_old = get_length(traj_resampled)
+    px, py = traj_resampled[0]
+    j = 0
+    traj_new  =[[px,py]]
+    for v in velocities:
+        px,py,j = get_next_point(j, traj_resampled, v)
+        traj_new.append([px, py])
+
+    return np.array(traj_new)
 		    
 def get_next_point(ixp, traj, step_pos):
     """
 	Find the point in trajectory TRAJ that is length STEP_LEN from traj[ixp]
     """
-	px, py = traj[ixp]
-	ixpf = ixp+1
+    px, py = traj[ixp]
+    ixpf = ixp+1
 
-	while(get_length(traj[ixp:ixpf]) < step_pos and (ixpf<traj.shape[0])):
-	    ixpf += 1
-	if(ixpf < traj.shape[0]):
-	    px, py = [traj[ixpf,0], traj[ixpf,1]]
-	else:
+    while(get_length(traj[ixp:ixpf]) < step_pos and (ixpf<traj.shape[0])):
+        ixpf += 1
+    if(ixpf < traj.shape[0]):
+        px, py = [traj[ixpf,0], traj[ixpf,1]]
+    else:
         #there is not a point in traj to which assign the new point. We set
         #px and py to -999, which indicates a missing value.
-	    px, py = -999,-999
+        px, py = -999,-999
 
-	return px,py, ixpf
+    return px,py, ixpf
 
 
 def get_new_trajs(trajs_div,do,test, show = False):
@@ -273,7 +274,7 @@ def get_new_trajs(trajs_div,do,test, show = False):
         _, axes = plt.subplots(1, 1, figsize=(10, 10))
         plt.ion()
         axes.imshow(mask.resize((int(mask.size[0]), int(mask.size[1])),
-		                resample=Image.NEAREST))
+	                    resample=Image.NEAREST))
 
     train_scenes = list(range(90))
     test_scenes = list(range(90,100))
@@ -336,36 +337,36 @@ def get_new_trajs(trajs_div,do,test, show = False):
             if(show):
                 axes.plot(traj_new[:,1], traj_new[:,0], color = 'g', marker = 's',markersize=2)
     return trajs_new
-	    
+        
 #divide trajs
 def divide_trajs(trajs):
     """
     Divide the map's edges
     """
-	trajs_div = []
-	L = 800
-	step =  300
-	for i in range(len(trajs)):
-	    traj = np.array(trajs[i])
-	    offset = 0
-	    trajs_ = []
-	    ix = 0
-	    dermax = 30
-	    step = 20  
-	    #Get the least linear line
-	    while((traj.shape[0]-offset)>L):
-		    offset += step
-		    traj_ = np.array(traj[offset:(offset+L)])
-		    t = np.arange(0, traj_.shape[0], step)
-		    der = np.diff(traj_[t,:], 2, axis = 0)
-		    der = np.sum(np.max(np.abs(der), axis =  0))
-		    if(der < dermax):
-		        dermin = der
-		        ixmin = ix
-		        trajs_div.append(traj_)
-		    ix +=1
+    trajs_div = []
+    L = 800
+    step =  300
+    for i in range(len(trajs)):
+        traj = np.array(trajs[i])
+        offset = 0
+        trajs_ = []
+        ix = 0
+        dermax = 30
+        step = 20  
+        #Get the least linear line
+        while((traj.shape[0]-offset)>L):
+	        offset += step
+	        traj_ = np.array(traj[offset:(offset+L)])
+	        t = np.arange(0, traj_.shape[0], step)
+	        der = np.diff(traj_[t,:], 2, axis = 0)
+	        der = np.sum(np.max(np.abs(der), axis =  0))
+	        if(der < dermax):
+	            dermin = der
+	            ixmin = ix
+	            trajs_div.append(traj_)
+	        ix +=1
 
-	return trajs_div
+    return trajs_div
 
 
 def extend_traj(traj,new_length): 
@@ -373,7 +374,6 @@ def extend_traj(traj,new_length):
     Extend trajectory TRAJ so it has length NEW_LENGTH. To achieve this we assume the vehicle
     #maintains the velocity (vx and vy) it had during the last 10% of its trajectory
     """
-    print('A trajectory is being extended')
     t = np.linspace(0, len(traj)-1, split_size, dtype = int)
     L = get_length(traj)
     vx, vy = np.diff(traj[t], axis = 0)[split_size -2]
@@ -409,39 +409,39 @@ def build_velocities(scenes):
     """
 	#Thresholds are stricter than before, as here we are simulating trajectories
     #we can only make use of those with a better quality.
-	THRESHOLD_ACCELERATION = 10 #MAXIMUM  ACCELERATION THAT THE TRAJECTORIES IN THE VELOCITIES MATRIX HAVE
-	THRESHOLD_LENGTH = 40 #MINIMUM LENGTH
-	velocities = []
-	instance_ID = 0
-	ins_offset = 0
-	part_no = {}
+    THRESHOLD_ACCELERATION = 10 #MAXIMUM  ACCELERATION THAT THE TRAJECTORIES IN THE VELOCITIES MATRIX HAVE
+    THRESHOLD_LENGTH = 40 #MINIMUM LENGTH
+    velocities = []
+    instance_ID = 0
+    ins_offset = 0
+    part_no = {}
 
-	map_data_split_ = map_data_split[scenes] #to ensure we train with only velocities that come from the training set
-	for scene_ix in range(map_data_split_.shape[0]):
-	    traj_partitions = []
-	    for partition_ix in range(len(map_data_split_[scene_ix])):
-		    part = map_data_split_[scene_ix][partition_ix]
-		    traj_instances= []
-		    for instance_ix in range(part.shape[0]):
-		        instance_ID = ins_offset +instance_ix
-		        traj_x = map_data_split_[scene_ix][partition_ix][instance_ix, :, 0]
-		        traj_y = map_data_split_[scene_ix][partition_ix][instance_ix, :, 1]
-		        traj = np.array([traj_x, traj_y])
-		        if instance_ID not in part_no: 
-		            part_no[instance_ID]= 0
-		            
-		        if(~np.any(traj_x == -999) and ~np.any(traj_y == -999)):
-		            part_no[instance_ID]+=1
-		            vx = np.diff(traj_x)
-		            vy = np.diff(traj_y)
-		            v = np.sqrt(np.power(vx, 2)+np.power(vy,2))
+    map_data_split_ = map_data_split[scenes] #to ensure we train with only velocities that come from the training set
+    for scene_ix in range(map_data_split_.shape[0]):
+        traj_partitions = []
+        for partition_ix in range(len(map_data_split_[scene_ix])):
+            part = map_data_split_[scene_ix][partition_ix]
+            traj_instances= []
+            for instance_ix in range(part.shape[0]):
+                instance_ID = ins_offset +instance_ix
+                traj_x = map_data_split_[scene_ix][partition_ix][instance_ix, :, 0]
+                traj_y = map_data_split_[scene_ix][partition_ix][instance_ix, :, 1]
+                traj = np.array([traj_x, traj_y])
+                if instance_ID not in part_no: 
+                    part_no[instance_ID]= 0
+	                
+                if(~np.any(traj_x == -999) and ~np.any(traj_y == -999)):
+                    part_no[instance_ID]+=1
+                    vx = np.diff(traj_x)
+                    vy = np.diff(traj_y)
+                    v = np.sqrt(np.power(vx, 2)+np.power(vy,2))
                     a_ = np.abs(np.diff(v))
-		            L_v = sum(v)
-		            if(L_v> THRESHOLD_LENGTH and np.max(a_)<THRESHOLD_ACCELERATION):
-		                velocities.append(v)
-	    ins_offset = instance_ID+1
-	    
-	return np.array(velocities)
+                    L_v = sum(v)
+                    if(L_v> THRESHOLD_LENGTH and np.max(a_)<THRESHOLD_ACCELERATION):
+                        velocities.append(v)
+        ins_offset = instance_ID+1
+        
+    return np.array(velocities)
 
 def load_maps():
     """
@@ -460,7 +460,7 @@ def load_maps():
 
         map_mask = map_record['mask']
         maps_list.append(map_mask.mask)
-        print('Finished loading the map corresponding to scenee: ', i)
+        print('Finished loading the map corresponding to scene: ', i)
 
     return maps_list
 

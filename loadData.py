@@ -19,7 +19,7 @@ pickle.dump( nusc, open( "data/nusc.p", "wb" ) )
 #MAP_DATA_ALL['POS'] is a list of scenes. Each scene is represented as a numpy array
 #of shape instances x samples (timesteps) x 2 (coordinates x and y). Missing values 
 #are represented as -999.
-map_data_all = load_traj_data(nusc , show = False)
+map_data_all = load_traj_data(nusc)
 np.save('data/map_data_all.npy',map_data_all)
 
 #Split data in chunks of 7 seconds each using the function in helpers.py

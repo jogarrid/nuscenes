@@ -23,10 +23,13 @@ args = parser.parse_args()
 
 #if it is
 force_loading = args.force_loading == 'T'
+no_few_trajs = 500
 
 if(not os.path.isfile('../data/all_trajs_generated.npy') or force_loading):
     #Load and save simulated trajectories
     all_trajs_generated = []
+    no_trajs = 0
+    few_trajs_generated = []
     delta= 500
     test = False
     for scene_ix in range(100):
@@ -36,8 +39,17 @@ if(not os.path.isfile('../data/all_trajs_generated.npy') or force_loading):
         trajs_div = divide_trajs(trajs)
         new_trajs = get_new_trajs(trajs_div,do, test)
         all_trajs_generated.append(new_trajs)
+        #If we have not finished loading the training set or we 
+        #are loading the test set 
+        if(no_trajs < no_few_trajs or scene_ix >89):
+           few_trajs_generated.append(all_trajs_generated[scene_ix])
+        else:
+           few_trajs_generated.append([])
+        no_trajs += len(all_trajs_generated[scene_ix])
+        print(no_trajs)
         print('Finished generating traj: ' ,scene_ix) 
 
+    np.save('../data/few_trajs_generated.npy', few_trajs_generated)
     np.save('../data/all_trajs_generated.npy',all_trajs_generated)
 
 if(not os.path.isfile('../data/maps_list.pkl') or force_loading):

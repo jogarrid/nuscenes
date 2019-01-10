@@ -23,11 +23,12 @@ parser.add_argument('--pred_length', type=int, default=8,
 parser.add_argument('--n', type=int, default=6,
                     help='Number of rows and of columns in the spatial matrix')
 parser.add_argument('--dataset', type=str, default='simulated',
-                    help='String, if not equal to simulated will use the real trajectories')
+                    help='String, if equal to simulated will use the simulated trajectories, if equal to simulatedSmall will use a few of the simulated trajectories, else it will use the real trajectories')
+
 sample_args = parser.parse_args()
 
 # Load the saved arguments to the model from the config file
-with open(os.path.join('../spatialData', 'config.pkl'), 'rb') as f:
+with open(os.path.join('../modelData', 'config.pkl'), 'rb') as f:
     saved_args = pickle.load(f)
 
 #with trainer.model.graph.as_default():
@@ -50,6 +51,9 @@ if(sample_args.dataset == 'simulated'):
     map_data_split = np.load('../data/all_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
     map_data_split = np.array([[np.array(map_data_split[i])] for i in range(100)])
 
+elif(sample_args.dataset == 'simulatedSmall'):
+    map_data_split = np.load('../data/few_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
+    map_data_split = np.array([[np.array(map_data_split[i])] for i in range(100)])
 else: 
     map_data_split = np.load('../data/map_data_split14.npy')
 
@@ -94,33 +98,34 @@ for b in range(data_loader.num_batches):
     j+=1
     obs_traj = np.array(obs_traj)
     index = mean_std[2]
-    print(index)
     traj_real = map_data_split[index[0]+90][index[1]][index[2],0:complete_traj_.shape[0]]
-    if(get_length(traj_real) >40):
-        # Compute the mean error between the predicted part and the true trajectory
-        error = get_ADE(complete_traj_, traj_real, sample_args.obs_length)
-        errorf = get_FDE(complete_traj_, traj_real)
-              
-        total_error += error
-        total_error_f += errorf
-        
-        #now the linear predictor
-        complete_traj =linear_pred(obs_traj, sample_args.pred_length)
-      
-        j+=1
-        obs_traj = np.array(obs_traj)
-        complete_traj_ = np.zeros((complete_traj.shape[0]+1,2))
-        
-        complete_traj_[:,0]= recover_traj(complete_traj[:,0], mean_x)
-        complete_traj_[:,1] = recover_traj(complete_traj[:,1], mean_y)
-        errorl = get_ADE(complete_traj_, traj_real, sample_args.obs_length)
-        errorlf = get_FDE(complete_traj_, traj_real)
-        total_error_l += errorl
-        total_error_lf += errorlf
-        print("Processed trajectory number : ", b, "out of ", data_loader.num_batches, " trajectories")
-        info.append(mean_std)
-        trajs.append(complete_traj)
+    # Compute the mean error between the predicted part and the true trajectory
+    error = get_ADE(complete_traj_, traj_real, sample_args.obs_length)
+    errorf = get_FDE(complete_traj_, traj_real)
+    info.append(mean_std)
+    trajs.append(complete_traj_)
+          
+    total_error += error
+    total_error_f += errorf
+    
+    #now the linear predictor
+    complete_traj =linear_pred(obs_traj, sample_args.pred_length)
   
+    j+=1
+    obs_traj = np.array(obs_traj)
+    complete_traj_ = np.zeros((complete_traj.shape[0]+1,2))
+    
+    complete_traj_[:,0]= recover_traj(complete_traj[:,0], mean_x)
+    complete_traj_[:,1] = recover_traj(complete_traj[:,1], mean_y)
+    errorl = get_ADE(complete_traj_, traj_real, sample_args.obs_length)
+    errorlf = get_FDE(complete_traj_, traj_real)
+    total_error_l += errorl
+    total_error_lf += errorlf
+    print("Processed trajectory number : ", b, "out of ", data_loader.num_batches, " trajectories")
+
+np.save('../data/spatial_predicted', trajs)
+np.save('../data/spatial_info', info)
+
 # Print the mean error across all the batches
 print("Total mean error of the model is ", total_error/data_loader.num_batches)
 print("Total mean error of the linear model is ", total_error_l/data_loader.num_batches)

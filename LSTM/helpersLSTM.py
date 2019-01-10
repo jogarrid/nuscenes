@@ -15,7 +15,7 @@ def get_spatial_tensor(point, scene_ix, n, delta, test=False):
     SCENE_IX: Index of the current scene
     N: Dimension of the spatial matrix
     DELTA: The spatial tensor contains the information on +-DELTA pixels around POINT
-    """"
+    """
     if(test):
         scene_ix = scene_ix + 90
 
@@ -69,26 +69,26 @@ def get_FDE(pred_traj, true_traj):
     PREDICTED_TRAJ : numpy matrix with the points of the predicted trajectory
     TRUE_TRAJ : numpy matrix with the points of the true trajectory
     '''
-  #L is the index of the final value
-  L = len(pred_traj)-1
-  error = np.sqrt((pred_traj[L][0] - true_traj[L][0])**2 + (pred_traj[L][0] - true_traj[L][0])**2)
-  return error
+    #L is the index of the final value
+    L = len(pred_traj)-1
+    error = np.sqrt((pred_traj[L][0] - true_traj[L][0])**2 + (pred_traj[L][0] - true_traj[L][0])**2)
+    return error
 
     
 #linear predictor
 def linear_pred(vec, n_pred):
-  """ 
-  VEC: the observed trajectory
-  N_PRED: the number of samples to predict
-  """
-  #find mean acceleration
-  step = (vec[len(vec)-1]-vec[0])/(len(vec)-1)
-  traj_total = np.zeros((len(vec)+n_pred,2))
-  #build the predicted samples, assumming constant acceleration = mean(acceleration) in the observed part of the trajectory
-  traj_total[len(traj_total)-n_pred: len(traj_total)]=  np.array([vec[len(vec)-1]+step*i for i in range(1, n_pred+1)])
-  #The observed part of the trajectory is not changed
-  traj_total[0:len(vec)] = vec
-  return traj_total
+    """ 
+    VEC: the observed trajectory
+    N_PRED: the number of samples to predict
+    """
+    #find mean acceleration
+    step = (vec[len(vec)-1]-vec[0])/(len(vec)-1)
+    traj_total = np.zeros((len(vec)+n_pred,2))
+    #build the predicted samples, assumming constant acceleration = mean(acceleration) in the observed part of the trajectory
+    traj_total[len(traj_total)-n_pred: len(traj_total)]=  np.array([vec[len(vec)-1]+step*i for i in range(1, n_pred+1)])
+    #The observed part of the trajectory is not changed
+    traj_total[0:len(vec)] = vec
+    return traj_total
 
 def recover_traj(vel, val0):
     """     

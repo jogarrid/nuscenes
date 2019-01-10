@@ -28,7 +28,7 @@ parser.add_argument('--batch_size', type=int, default=50,
 parser.add_argument('--seq_length', type=int, default=12,
                     help='RNN sequence length')
 # Number of epochs parameter
-parser.add_argument('--num_epochs', type=int, default=200,
+parser.add_argument('--num_epochs', type=int, default=300,
                     help='number of epochs')
 # Frequency at which the model should be saved parameter
 parser.add_argument('--save_every', type=int, default=400,
@@ -43,25 +43,24 @@ parser.add_argument('--learning_rate', type=float, default=0.01,
 parser.add_argument('--decay_rate', type=float, default=0.99,
                     help='decay rate for rmsprop')
 # Dimension of the embeddings parameter
-parser.add_argument('--embedding_size', type=int, default=256,
+parser.add_argument('--embedding_size', type=int, default=128,
                     help='Embedding dimension for the spatial coordinates')
 parser.add_argument('--obs_length', type=int, default=4,
                     help='Number of observed samples')
 parser.add_argument('--pred_length', type=int, default=8,
                     help='Number of predicted samples')
-
 parser.add_argument('--dataset', type=str, default='simulated',
-                    help='String, if not equal to simulated will use the real trajectories')
+                    help='String, if equal to simulated will use the simulated trajectories, if equal to simulatedSmall will use a few of the simulated trajectories, else it will use the real trajectories')
+
 args = parser.parse_args()
 
 def train(args):
-
     # Create the data loader object. This object would preprocess the data in terms of
     # batches each of size args.batch_size, of length args.seq_length
     data_loader = DataLoader(args.batch_size, args.seq_length, args.dataset, force_preprocessing=True, testing = False)
 
     # Save the arguments int the config file
-    with open(os.path.join('../vanillaData', 'config.pkl'), 'wb') as f:
+    with open(os.path.join('../modelData', 'config.pkl'), 'wb') as f:
         pickle.dump(args, f)
 
     # Create a Vanilla LSTM model with the arguments
@@ -70,9 +69,9 @@ def train(args):
     # Initialize a TensorFlow session
     with tf.Session() as sess:
         # Initialize all the variables in the graph
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         # Add all the variables to the list of variables to be saved
-        saver = tf.train.Saver(tf.all_variables())
+        saver = tf.train.Saver(tf.global_variables())
         for e in range(args.num_epochs):
             # Assign the learning rate (decayed acc. to the epoch number)
             sess.run(tf.assign(model.lr, args.learning_rate * (args.decay_rate ** e)))

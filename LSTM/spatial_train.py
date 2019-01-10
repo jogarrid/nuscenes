@@ -24,7 +24,7 @@ parser.add_argument('--batch_size', type=int, default=50,
 parser.add_argument('--seq_length', type=int, default=12,
                     help='RNN sequence length')
 # Number of epochs parameter
-parser.add_argument('--num_epochs', type=int, default=200,
+parser.add_argument('--num_epochs', type=int, default=300,
                     help='number of epochs')
 # Frequency at which the model should be saved parameter
 parser.add_argument('--save_every', type=int, default=400,
@@ -49,17 +49,16 @@ parser.add_argument('--pred_length', type=int, default=8,
 parser.add_argument('--embedding_sizes', type=int, default=1024,
                     help='Embedding dimension for the spatial tensor')
 
-
-parser.add_argument('--n', type=int, default=6,
+parser.add_argument('--n', type=int, default=7,
                     help='Number of rows and columns in the spatial matrix')
 
 parser.add_argument('--delta', type=int, default=20,
                     help='Spatial tensor will cover +-delta pixels from a vehicle s position')
 
 parser.add_argument('--dataset', type=str, default='simulated',
-                    help='String, if not equal to simulated will use the real trajectories')
-args = parser.parse_args()
+                    help='String, if equal to simulated will use the simulated trajectories, if equal to simulatedSmall will use a few of the simulated trajectories, else it will use the real trajectories')
 
+args = parser.parse_args()
 f = open('../data/maps_list.pkl', "rb")
 maps_list = pickle.load(f)
 f.close()
@@ -70,7 +69,7 @@ def train(args):
     data_loader = DataLoader(args.batch_size, args.seq_length, args.dataset, force_preprocessing=True, testing = False, n = args.n, delta = args.delta)
 
     # Save the arguments int the config file
-    with open(os.path.join('../spatialData', 'config.pkl'), 'wb') as f:
+    with open(os.path.join('../modelData', 'config.pkl'), 'wb') as f:
         pickle.dump(args, f)
 
     # Create a Vanilla LSTM model with the arguments
@@ -79,9 +78,9 @@ def train(args):
     # Initialize a TensorFlow session
     with tf.Session() as sess:
         # Initialize all the variables in the graph
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         # Add all the variables to the list of variables to be saved
-        saver = tf.train.Saver(tf.all_variables())
+        saver = tf.train.Saver(tf.global_variables())
 
         # For each epoch
         print(args.num_epochs)
@@ -113,6 +112,7 @@ def train(args):
                 y = [y[i][args.obs_length:args.seq_length] for i in range(len(y))]
                 # Feed the source, target data and the initial LSTM state to the model
                 feed = {model.input_data: input_,model.input_s: input_s, model.target_data: y, model.initial_state: state}
+
                 # Fetch the loss of the model on this batch, the final LSTM state from the session
                 train_loss, state, _ , pred= sess.run([model.cost, model.final_state, model.train_op, model.output], feed)
                                 # Toc

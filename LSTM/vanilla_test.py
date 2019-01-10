@@ -20,9 +20,9 @@ parser.add_argument('--obs_length', type=int, default=4,
                     help='Number of observed samples')
 parser.add_argument('--pred_length', type=int, default=8,
                     help='Number of predicted samples')
-
 parser.add_argument('--dataset', type=str, default='simulated',
-                    help='String, if not equal to simulated will use the real trajectories')
+                    help='String, if equal to simulated will use the simulated trajectories, if equal to simulatedSmall will use a few of the simulated trajectories, else it will use the real trajectories')
+
 
 sample_args = parser.parse_args()
 
@@ -30,7 +30,7 @@ sample_args = parser.parse_args()
 testScenes = list(range(90,100))
 
 # Load the saved arguments to the model from the config file
-with open(os.path.join('../vanillaData', 'config.pkl'), 'rb') as f:
+with open(os.path.join('../modelData', 'config.pkl'), 'rb') as f:
     saved_args = pickle.load(f)
 
 #with trainer.model.graph.as_default():
@@ -95,7 +95,6 @@ for b in range(data_loader.num_batches):
     j+=1
     obs_traj = np.array(obs_traj)
     index = mean_std[2]
-    print(index)
     traj_real = map_data_split[index[0]+90][index[1]][index[2],0:complete_traj_.shape[0]]
 
     # Compute the mean error between the predicted part and the true trajectory
@@ -122,6 +121,8 @@ for b in range(data_loader.num_batches):
     info.append(mean_std)
     trajs.append(complete_traj)
   
+np.save('../data/vanilla_predicted', trajs)
+np.save('../data/vanilla_info', info)
 
 print('There were a total of '+str(len(trajs)) +' in the test scenes. However, in the case of the real nuscenes dataset, '+
 'most of this trajectories correspond to really short trajectories or to stopped vehicles (length is less than 10 pixels)')

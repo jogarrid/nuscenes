@@ -29,7 +29,7 @@ def get_length(traj):
         return 0
 
 
-def load_traj_data(nusc):
+def load_traj_data(nusc, only_vehicles = True):
     records = nusc.scene
 
     #MAP_DATA_ALL['POS'] is a list of scenes. Each scene is represented as a numpy array
@@ -87,8 +87,9 @@ def load_traj_data(nusc):
                 if(instance['first_annotation_token'] == ann['token']  and len(ann['attribute_tokens']) > 0):
                     atribute = nusc.get('attribute',ann['attribute_tokens'][0])
 
-                    #We only save the trajectory of vehicles that are not annotated as parked
-                    if(atribute['name'] != 'vehicle.parked' and atribute['name'].split('.')[0] == 'vehicle'):
+                    #We only save the trajectory of vehicles that are not annotated as parked, or 
+                    #the trajectory of all the annotations if the boolean only_vehicle is False
+                    if(not only_vehicles or (atribute['name'] != 'vehicle.parked' and atribute['name'].split('.')[0] == 'vehicle')):
                         #First, all the values are -999. We then fill in the values of this instance's trajectory.
                         #The not filled in values (missing values) will then be -999.
                         map_positions['pos'] = np.concatenate((map_positions['pos'],-999*np.ones((1,no_samples,2))))
@@ -136,8 +137,7 @@ def split_data(split_size, step, map_data_all):
 
     return map_data_split
 
-
-def plot_2traj_partition(nusc, record, partition, part_pred, instance_tokens):  
+def plot_2traj_partition(nusc, record, partition, part_pred, instance_tokens = None):  
     """
     Show in map all the predicted trajectories along with the real ones. 
     """
@@ -171,7 +171,7 @@ def plot_2traj_partition(nusc, record, partition, part_pred, instance_tokens):
             ymax = max(ymax,y)
 
     delta = 100
-    do = np.array(map_mask.mask[int(ymin):int(ymax),int(xmin):int(xmax)])
+    do = np.array(map_mask.mask[int(xmin-delta):int(xmax+delta),int(ymin-delta):int(ymax+delta)])
     mask = Image.fromarray(do)
     axes.imshow(mask.resize((int(mask.size[0]), int(mask.size[1])),
                             resample=Image.NEAREST))
@@ -180,40 +180,23 @@ def plot_2traj_partition(nusc, record, partition, part_pred, instance_tokens):
     #Let's figure out which instances have all data available (no x or y is -999)
     indexes = []
     for p in range(part_pred.shape[0]):
-        if(not np.any(part_pred[p,0:9]== -999)):
+        if(not np.any(part_pred[p]== -999)):
             indexes.append(p)
     j = 0
     i = 0
     n_obs = 4
     #plot each instance the index of which is in INDEXES
     for instance_index in indexes:
-        x = partition[instance_index,0:9,0] - xmin 
-        y = partition[instance_index,0:9,1] - ymin 
-        xpred = part_pred[instance_index,:,0] - xmin 
-        ypred = part_pred[instance_index,:,1] - ymin 
+        x = partition[instance_index,0:,0] - xmin +delta
+        y = partition[instance_index,0:,1] - ymin +delta
+        xpred = part_pred[instance_index,:,0] - xmin +delta
+        ypred = part_pred[instance_index,:,1] - ymin +delta
 
         #We represent the ego vehicle as a star
         if(instance_index == 0): 
-            axes.plot(x[0:(n_obs+1)],y[0:(n_obs+1)],color = 'b',marker="*", markersize = 7)
-            axes.plot(xpred[n_obs:],ypred[n_obs:],color = 'r',marker="*", markersize = 7)
-            axes.plot(x[n_obs:],y[n_obs:],color = 'g',marker="*", markersize = 7)
-
-        else:
-            instance_token = instance_tokens[instance_index]
-            instance = nusc.get('instance', instance_token)
-            cat = nusc.get('category', instance['category_token'])
-            #We represent humans as bars
-            if(cat['name'].split('.')[0] == 'human'):
-                axes.plot(x[0:(n_obs+1)],y[0:(n_obs+1)],color = 'b',marker="|", markersize = 7)
-                axes.plot(xpred[n_obs:],ypred[n_obs:],color = 'r',marker="|", markersize = 7)
-                axes.plot(x[n_obs:],y[n_obs:],color = 'g',marker="|", markersize = 7)
-            
-            #We represent cars as squares
-            elif(cat['name'].split('.')[0] == 'vehicle'):
-                axes.plot(x[0:(n_obs+1)],y[0:(n_obs+1)],color = 'b',marker="s", markersize = 5)
-                axes.plot(xpred[n_obs:],ypred[n_obs:],color = 'r',marker="s", markersize = 5)
-                axes.plot(x[n_obs:],y[n_obs:],color = 'g',marker="s", markersize = 5)
-                
+            axes.plot(y[0:(n_obs+1)],x[0:(n_obs+1)],color = 'b',marker="*", markersize = 7)
+            axes.plot(ypred[n_obs:],xpred[n_obs:],color = 'r',marker="*", markersize = 7)
+            axes.plot(y[n_obs:],x[n_obs:],color = 'g',marker="*", markersize = 7)
 
 def plot_1traj_partition(nusc, record, partition, instance_tokens): 
     """

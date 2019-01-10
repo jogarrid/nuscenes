@@ -25,7 +25,7 @@ class DataLoader():
         self.delta = delta
 
         # Data directory where the pre-processed pickle file resides
-        self.data_dir = '../spatialData/'
+        self.data_dir = '../modelData/'
 
         # Store the batch size and the sequence length arguments
         self.batch_size = batch_size
@@ -66,6 +66,10 @@ class DataLoader():
             data_all = np.load('../data/all_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
             data_all = np.array([[np.array(data_all[i])] for i in range(100)])
 
+        elif(dataset == 'simulatedSmall'):
+            data_all = np.load('../data/few_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
+            data_all = np.array([[np.array(data_all[i])] for i in range(100)])
+            print('Training on a 803 of the simulated trajectories')
         else: 
             data_all = np.load('../data/map_data_split14.npy')
         
@@ -280,7 +284,6 @@ class Model():
         self.delta= args.delta
         # Initialize a BasicLSTMCell recurrent unit
         # args.rnn_size contains the dimension of the hidden state of the LSTM
-        num_units = args.embedding_size + args.embedding_sizes
         cell = tf.nn.rnn_cell.LSTMCell(name='basic_lstm_cell', num_units = args.rnn_size)
 
         # TODO: (improve) Dropout layer can be added here

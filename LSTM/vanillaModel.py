@@ -18,7 +18,7 @@ class DataLoader():
         '''
 
         # Data directory where the pre-processed pickle file resides
-        self.data_dir = '../vanillaData/'
+        self.data_dir = '../modelData/'
 
         # Store the batch size and the sequence length arguments
         self.batch_size = batch_size
@@ -59,7 +59,10 @@ class DataLoader():
             print('USING THE SIMULATED TRAJECTORIES')
             data_all = np.load('../data/all_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
             data_all = np.array([[np.array(data_all[i])] for i in range(100)])
-
+        elif(dataset == 'simulatedSmall'):
+            print('USING THE SIMULATED TRAJECTORIES, VERSION WITH FEW TRAJECTORIES')
+            data_all = np.load('../data/few_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
+            data_all = np.array([[np.array(data_all[i])] for i in range(100)])
         else: 
             data_all = np.load('../data/map_data_split14.npy')
         
