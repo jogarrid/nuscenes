@@ -1,5 +1,5 @@
 # nuscenes
-Nuscenes data prediction
+Nuscenes trajectory prediction.
 For the nuscenes import to work, follow the steps in https://github.com/nutonomy/nuscenes-devkit
 
 You need to download the dataset and place it in the dataset folder. 
