@@ -62,6 +62,7 @@ def get_lines(scene_ix, delta):
     #If area is already big enough, do not expand the map
     if(A>600*600):
         delta = 0
+
     do = np.array(map_mask.mask[(int(ymin)-delta):(int(ymax)+delta),(int(xmin)-delta):(int(xmax)+delta)])
     mask = Image.fromarray(do)
  

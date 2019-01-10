@@ -52,7 +52,9 @@ print('loading model: ', ckpt.model_checkpoint_path)
 if(sample_args.dataset == 'simulated'):
     map_data_split = np.load('../data/all_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
     map_data_split = np.array([[np.array(map_data_split[i])] for i in range(100)])
-
+elif(sample_args.dataset == 'simulatedSmall'):
+    map_data_split = np.load('../data/few_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
+    map_data_split = np.array([[np.array(map_data_split[i])] for i in range(100)])
 else: 
     map_data_split = np.load('../data/map_data_split14.npy')
 

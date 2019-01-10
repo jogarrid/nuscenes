@@ -19,7 +19,7 @@ np.random.seed(100)
 
 parser = argparse.ArgumentParser()
 # RNN size parameter (dimension of the output/hidden state)
-parser.add_argument('--rnn_size', type=int, default=128,
+parser.add_argument('--rnn_size', type=int, default=256,
                     help='size of RNN hidden state')
 # Size of each batch parameter
 parser.add_argument('--batch_size', type=int, default=50,
@@ -43,7 +43,7 @@ parser.add_argument('--learning_rate', type=float, default=0.01,
 parser.add_argument('--decay_rate', type=float, default=0.99,
                     help='decay rate for rmsprop')
 # Dimension of the embeddings parameter
-parser.add_argument('--embedding_size', type=int, default=128,
+parser.add_argument('--embedding_size', type=int, default=256,
                     help='Embedding dimension for the spatial coordinates')
 parser.add_argument('--obs_length', type=int, default=4,
                     help='Number of observed samples')

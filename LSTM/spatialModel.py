@@ -69,7 +69,7 @@ class DataLoader():
         elif(dataset == 'simulatedSmall'):
             data_all = np.load('../data/few_trajs_generated.npy')  #scenes x partitions x instances x time_steps x 2
             data_all = np.array([[np.array(data_all[i])] for i in range(100)])
-            print('Training on a 803 of the simulated trajectories')
+            print('Training on a 500 simulated trajectories')
         else: 
             data_all = np.load('../data/map_data_split14.npy')
         

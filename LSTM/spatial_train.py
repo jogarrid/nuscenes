@@ -39,7 +39,7 @@ parser.add_argument('--learning_rate', type=float, default=0.01,
 parser.add_argument('--decay_rate', type=float, default=0.99,
                     help='decay rate for rmsprop')
 # Dimension of the embeddings parameter
-parser.add_argument('--embedding_size', type=int, default=128,
+parser.add_argument('--embedding_size', type=int, default=256,
                     help='Embedding dimension for the velocity coordinates')
 parser.add_argument('--obs_length', type=int, default=4,
                     help='Number of observed samples')
@@ -49,7 +49,7 @@ parser.add_argument('--pred_length', type=int, default=8,
 parser.add_argument('--embedding_sizes', type=int, default=1024,
                     help='Embedding dimension for the spatial tensor')
 
-parser.add_argument('--n', type=int, default=7,
+parser.add_argument('--n', type=int, default=6,
                     help='Number of rows and columns in the spatial matrix')
 
 parser.add_argument('--delta', type=int, default=20,
